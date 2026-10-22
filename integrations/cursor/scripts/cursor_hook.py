@@ -305,17 +305,19 @@ def normalize_payload(
             normalized["status"] = payload["status"]
         message = _first_str(payload, "assistant_message", "last_assistant_message", "text")
         qa_store = script == "store-to-session.py" and "--stop" in flags
-        if not message and qa_store and payload.get("hook_event_name") != "afterAgentResponse":
-            # Cursor's stop carries no text. If afterAgentResponse already
-            # stored this turn, leave the message empty so the hook is skipped
-            # instead of storing the answer twice; otherwise recover it from
-            # the transcript tail. (An afterAgentResponse without text has
-            # nothing to store and is skipped as well.) Only the QA store
-            # touches the marker: the other stop hooks (credits-refresh) must
-            # not consume it out from under the store.
+        if qa_store and payload.get("hook_event_name") != "afterAgentResponse":
+            # If afterAgentResponse already stored this turn, drop the answer
+            # so the hook is skipped instead of storing it twice, even when
+            # this stop carries the answer text too. Otherwise a stop without
+            # text recovers the answer from the transcript tail. (An
+            # afterAgentResponse without text has nothing to store and is
+            # skipped as well.) Only the QA store touches the marker: the other
+            # stop hooks (credits-refresh) must not consume it out from under
+            # the store.
             if consume_stored_marker(session, turn):
                 normalized["answer_already_stored"] = True
-            else:
+                message = ""
+            elif not message:
                 message = last_assistant_text(
                     read_transcript_tail(normalized.get("transcript_path"))
                 )

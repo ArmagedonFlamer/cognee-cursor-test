@@ -127,11 +127,14 @@ python3 "$(find ~/.cursor/plugins -path '*/scripts/doctor.py' -path '*cognee*' |
 
 ## Credit in the answer
 
-When an answer uses recalled memory, the agent says so in one line at the end, as in the [Claude Code plugin](../claude-code/README.md#credit-in-the-answer):
+When an answer uses recalled memory, the agent says so at the end, as in the [Claude Code plugin](../claude-code/README.md#credit-in-the-answer). Cursor gives plugins no way to redraw a chat message, so the agent writes the Cognee logotype itself, as two rows of braille (the same glyphs the Claude Code plugin draws in a terminal):
 
 ```
-> 🧠 Cognee memory [m2]: on Oct 3 (Codex session) you chose the server over the CLI.
+> ⡏⠁⡏⡇⡏⡁⡧⣸⢸⠅⡯ Cognee memory [m2]: on Oct 3 (Codex session) you chose the server over the CLI.\
+> ⠉⠁⠉⠁⠉⠁⠁⠈⠈⠁⠉
 ```
+
+The backslash is a Markdown line break: it keeps the second row of the logotype under the first instead of joining the two.
 
 The recall tags every item it injects with `m1`, `m2`… and where it came from, and adds an instruction asking for the line. When the answer is stored, the cited tags are checked against the ones the session handed out, and a tag that was never given is logged as invented. The tags arrive with the memory block, on the turn's first tool call (see [Known limitations](#known-limitations)), so a turn that calls no tool writes no credit line. Set `COGNEE_PLUGIN_CITE_MEMORY=false` in `~/.cognee/.env` to turn the tags and the line off.
 

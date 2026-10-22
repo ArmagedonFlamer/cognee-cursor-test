@@ -378,12 +378,12 @@ def format_code_facts(facts: list) -> str:
 #
 # Every recalled item the hook injects gets a short tag (``m1``, ``m2``…) and a
 # label saying where it came from. An instruction above the memory asks the
-# agent to end an answer that used memory with one ``🧠 Cognee memory [mN]: …``
-# line. Tags are numbered across the session and a memory recalled again keeps
-# its tag, so a tag always names one memory however many turns later it is
-# cited. The Stop hook checks the answer's credit line against the session's
-# tags: a cited tag that was never handed out is logged as invented. That log
-# is the measure of how reliably agents credit memory.
+# agent to end an answer that used memory with a ``Cognee memory [mN]: …`` line
+# led by the Cognee logotype. Tags are numbered across the session and a memory
+# recalled again keeps its tag, so a tag always names one memory however many
+# turns later it is cited. The Stop hook checks the answer's credit line against
+# the session's tags: a cited tag that was never handed out is logged as
+# invented. That log is the measure of how reliably agents credit memory.
 
 ENV_CITE_MEMORY = "COGNEE_PLUGIN_CITE_MEMORY"
 
@@ -406,13 +406,21 @@ _AGENTS = {
     "antigravity": "Antigravity",
 }
 
+#: The Cognee display logotype (cognee.ai brand resources) as two rows of braille,
+#: the same glyphs the Claude Code plugin draws on its terminal credit line. Cursor
+#: has no UI hook to redraw the line, so the model writes it in place of 🧠.
+LOGOTYPE = ("⡏⠁⡏⡇⡏⡁⡧⣸⢸⠅⡯", "⠉⠁⠉⠁⠉⠁⠁⠈⠈⠁⠉")
+
 CREDIT_INSTRUCTION = (
     "Crediting Cognee memory: Cognee found {found} for this prompt, each tagged below "
     "as [mN · where it came from]. A memory recalled again in this session keeps its "
-    "tag. If your answer uses information from a tagged item, end the answer with one "
-    "line:\n"
-    "> 🧠 Cognee memory [mN]: <what you remembered, and where or when it came from, "
-    "as the tag says>\n"
+    "tag. If your answer uses information from a tagged item, end the answer with these "
+    "two lines:\n"
+    f"> {LOGOTYPE[0]} Cognee memory [mN]: <what you remembered, and where or when it "
+    "came from, as the tag says>\\\n"
+    f"> {LOGOTYPE[1]}\n"
+    "Copy the two rows of dots exactly: they draw the Cognee logotype. End the first "
+    "line with a backslash and start the second line with > so the rows stay stacked.\n"
     "Cite several tags as [m1, m3]. Cite only tags Cognee gave you, and only items your "
     "answer actually used. Never credit Cognee for what you know from project "
     "instruction files, your own memory files, the code, or this conversation. If no "

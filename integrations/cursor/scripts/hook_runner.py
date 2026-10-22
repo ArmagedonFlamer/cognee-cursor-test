@@ -18,7 +18,11 @@ The runner:
   ``~/.cognee-plugin/<plugin>/hook-crash.log`` (the temp dir if no home can be
   resolved), prints one line to stderr, surfaces a rate-limited
   ``systemMessage`` so the user learns memory is off, and exits 0;
-* leaves an explicit ``sys.exit(code)`` from the script untouched.
+* leaves an explicit ``sys.exit(code)`` from the script untouched;
+* steps aside inside Cursor when the Cognee Cursor plugin is installed: with
+  "Include Third-Party Plugins, Skills, and Other Configs" on, Cursor runs
+  Claude Code's plugins too, so this plugin would capture every Cursor chat a
+  second time. It replies ``{}`` and leaves the chat to the Cursor plugin.
 
 Stdlib only, and nothing from the plugin is imported here: this file has to
 work precisely when the plugin's own modules don't. The Claude Code, Codex and
@@ -27,6 +31,7 @@ Cursor plugins carry identical copies apart from ``_STATE_SUBDIR``.
 
 from __future__ import annotations
 
+import glob
 import json
 import os
 import runpy
@@ -46,6 +51,9 @@ _REPORTED_NAME = "hook-crash-reported.json"
 _REPORT_INTERVAL_SECONDS = 3600
 #: Read by _plugin_common._reexec_into_venv so the venv re-exec keeps the runner.
 RUNNER_ENV = "COGNEE_HOOK_RUNNER"
+#: Set by Cursor on every hook it launches, its own and imported ones alike;
+#: Claude Code and Codex never set it.
+_CURSOR_HOOK_ENV = "CURSOR_VERSION"
 
 
 def _log_dir() -> str:
@@ -160,6 +168,38 @@ def _report(script: str, summary: str, detail: str, stdout: _WriteTracker) -> in
     return 0
 
 
+def _cursor_plugin_installed() -> bool:
+    """Whether the Cognee Cursor plugin's hooks are set up for this user.
+
+    Covers a marketplace install (Cursor's plugin cache), a local plugin folder
+    and the hooks written to ``~/.cursor/hooks.json`` by its installer.
+    """
+    home = os.path.expanduser("~")
+    if not home or home == "~":
+        return False
+    plugins = os.path.join(home, ".cursor", "plugins")
+    for pattern in (
+        os.path.join(plugins, "cache", "*", "*", "*", "scripts", "cursor_hook.py"),
+        os.path.join(plugins, "local", "*", "scripts", "cursor_hook.py"),
+    ):
+        if glob.glob(pattern):
+            return True
+    try:
+        with open(os.path.join(home, ".cursor", "hooks.json"), encoding="utf-8") as handle:
+            return "run-cursor-hook" in handle.read()
+    except Exception:
+        return False
+
+
+def _yields_to_cursor_plugin() -> bool:
+    """A non-Cursor plugin launched by Cursor, which the Cursor plugin covers."""
+    return (
+        _STATE_SUBDIR != "cursor"
+        and bool(os.environ.get(_CURSOR_HOOK_ENV))
+        and _cursor_plugin_installed()
+    )
+
+
 def main(argv: list) -> int:
     _force_utf8_stdio()
     stdout = _WriteTracker(sys.stdout)
@@ -169,6 +209,14 @@ def main(argv: list) -> int:
         sys.stderr.write("usage: hook_runner.py <hook-script.py> [args...]\n")
         return 0
     script = os.path.abspath(argv[1])
+
+    if _yields_to_cursor_plugin():
+        try:
+            sys.stdin.read()  # take the payload so Cursor's write never hits a closed pipe
+        except Exception:
+            pass
+        stdout.write("{}\n")
+        return 0
 
     if sys.version_info < _MIN_PYTHON:
         summary = "Python {}.{} is too old; the hooks need {}.{} or newer".format(

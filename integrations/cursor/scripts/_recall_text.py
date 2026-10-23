@@ -406,10 +406,11 @@ _AGENTS = {
     "antigravity": "Antigravity",
 }
 
-#: "cognee" in one row of braille, linked to cognee.ai. Cursor has no UI hook to
+#: A link to cognee.ai whose text is one zero-width space. Cursor has no UI hook to
 #: redraw the credit line the way the Claude Code plugin does, and its chat drops
-#: colour (HTML, KaTeX); a link is drawn in the link colour with the site's logo.
-LOGOTYPE = "[⠯⠸⠽⠸⢽⠸⠱⠸⠯⠸⠯](https://www.cognee.ai)"
+#: colour (HTML, KaTeX), but it draws a link with the site's logo: with no visible
+#: text, the Cognee logo is all that shows.
+LOGOTYPE = "[\u200b](https://www.cognee.ai)"
 
 CREDIT_INSTRUCTION = (
     "Crediting Cognee memory: Cognee found {found} for this prompt, each tagged below "
@@ -418,7 +419,8 @@ CREDIT_INSTRUCTION = (
     "line:\n"
     f"> {LOGOTYPE} Cognee memory [mN]: <what you remembered, and where or when it came "
     "from, as the tag says>\n"
-    "Start it exactly as shown: the linked dots are the Cognee logotype.\n"
+    "Start it exactly as shown: the link text is a single zero-width space (U+200B), "
+    "so only the Cognee logo shows.\n"
     "Cite several tags as [m1, m3]. Cite only tags Cognee gave you, and only items your "
     "answer actually used. Never credit Cognee for what you know from project "
     "instruction files, your own memory files, the code, or this conversation. If no "

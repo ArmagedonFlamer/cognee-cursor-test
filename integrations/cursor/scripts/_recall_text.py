@@ -406,21 +406,19 @@ _AGENTS = {
     "antigravity": "Antigravity",
 }
 
-#: The Cognee display logotype (cognee.ai brand resources) as two rows of braille,
-#: the same glyphs the Claude Code plugin draws on its terminal credit line. Cursor
-#: has no UI hook to redraw the line, so the model writes it in place of 🧠.
-LOGOTYPE = ("⡏⠁⡏⡇⡏⡁⡧⣸⢸⠅⡯", "⠉⠁⠉⠁⠉⠁⠁⠈⠈⠁⠉")
+#: "cognee" in one row of braille, linked to cognee.ai. Cursor has no UI hook to
+#: redraw the credit line the way the Claude Code plugin does, and its chat drops
+#: colour (HTML, KaTeX); a link is drawn in the link colour with the site's logo.
+LOGOTYPE = "[⠯⠸⠽⠸⢽⠸⠱⠸⠯⠸⠯](https://www.cognee.ai)"
 
 CREDIT_INSTRUCTION = (
     "Crediting Cognee memory: Cognee found {found} for this prompt, each tagged below "
     "as [mN · where it came from]. A memory recalled again in this session keeps its "
-    "tag. If your answer uses information from a tagged item, end the answer with these "
-    "two lines:\n"
-    f"> {LOGOTYPE[0]} Cognee memory [mN]: <what you remembered, and where or when it "
-    "came from, as the tag says>\\\n"
-    f"> {LOGOTYPE[1]}\n"
-    "Copy the two rows of dots exactly: they draw the Cognee logotype. End the first "
-    "line with a backslash and start the second line with > so the rows stay stacked.\n"
+    "tag. If your answer uses information from a tagged item, end the answer with one "
+    "line:\n"
+    f"> {LOGOTYPE} Cognee memory [mN]: <what you remembered, and where or when it came "
+    "from, as the tag says>\n"
+    "Start it exactly as shown: the linked dots are the Cognee logotype.\n"
     "Cite several tags as [m1, m3]. Cite only tags Cognee gave you, and only items your "
     "answer actually used. Never credit Cognee for what you know from project "
     "instruction files, your own memory files, the code, or this conversation. If no "

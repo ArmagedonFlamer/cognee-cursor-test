@@ -421,6 +421,8 @@ CREDIT_INSTRUCTION = (
     "from, as the tag says>\n"
     "Start it exactly as shown: the link text is a single zero-width space (U+200B), "
     "so only the Cognee logo shows.\n"
+    "Credit a tagged item whenever your answer states what it says, even if you also "
+    "found the same fact another way, such as your own Cognee search or a file. "
     "Cite several tags as [m1, m3]. Cite only tags Cognee gave you, and only items your "
     "answer actually used. Never credit Cognee for what you know from project "
     "instruction files, your own memory files, the code, or this conversation. If no "

@@ -72,6 +72,11 @@ TOOL_NAME_MAP = {
     "Task": "Agent",
 }
 
+#: Tools whose postToolUse ``additional_context`` never reaches the model: the
+#: Cursor IDE (3.26) accepts it from the hook and then drops it. The held memory
+#: block waits for the turn's next tool call instead.
+CONTEXT_DROPPING_TOOLS = frozenset({"Read"})
+
 #: Inner script -> the Claude Code event it expects when no event is given.
 EVENT_FOR_SCRIPT = {
     "session-start.py": "SessionStart",
@@ -892,7 +897,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if script == "session-start.py":
         reply = with_plugin_root_context(reply)
-    if event == "PostToolUse" and record.get("session"):
+    if (
+        event == "PostToolUse"
+        and record.get("session")
+        and record.get("tool") not in CONTEXT_DROPPING_TOOLS
+    ):
         held = take_prompt_context(record["session"], record.get("turn", ""))
         if held:
             current = reply.get("additional_context")

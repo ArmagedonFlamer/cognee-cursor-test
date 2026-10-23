@@ -31,7 +31,7 @@ Cursor spawns one process per hook, writes a JSON payload to stdin and reads a J
 | --- | --- | --- |
 | `sessionStart` | `session-start.py` | boots/checks the Cognee server, registers the conversation, returns `additional_context` |
 | `beforeSubmitPrompt` | `session-context-lookup.py`, `store-user-prompt.py` | one recall request and the prompt parked for the answer; the reply is only `{"continue": true}`, because Cursor documents no context field for this hook. The memory block is held for the turn (`~/.cognee-plugin/cursor/prompt-context/`) |
-| `postToolUse`, `postToolUseFailure` | `store-to-session.py` | tool call + result stored as a trace entry (`Shell`→`Bash`, `Task`→`Agent`, `MCP:x`→`mcp__x`); on the turn's first tool call, the held memory block is returned as `additional_context`, which Cursor documents to reach the model |
+| `postToolUse`, `postToolUseFailure` | `store-to-session.py` | tool call + result stored as a trace entry (`Shell`→`Bash`, `Task`→`Agent`, `MCP:x`→`mcp__x`); on the turn's first tool call other than `Read`, the held memory block is returned as `additional_context`, which Cursor documents to reach the model (Cursor drops it on a `Read`) |
 | `afterAgentResponse` | `store-to-session.py --stop` | prompt + final answer stored as one QA pair — this is the end-of-turn hook the Cursor IDE actually fires, and its `text` is the answer |
 | `stop` | `store-to-session.py --stop`, `credits-refresh.py` | fallback only: skipped when `afterAgentResponse` already stored the turn (a per-conversation marker under `responses/`); otherwise the answer is scraped from the tail of Cursor's JSONL transcript. Never observed to fire in IDE 3.16.17 / CLI 2026.09.26 |
 | `preCompact` | `pre-compact.py` | memory anchor / deferred sync |
@@ -133,7 +133,7 @@ When an answer uses recalled memory, the agent says so in one line at the end, a
 > [​](https://www.cognee.ai) Cognee memory [m2]: on Oct 3 (Codex session) you chose the server over the CLI.
 ```
 
-The recall tags every item it injects with `m1`, `m2`… and where it came from, and adds an instruction asking for the line. When the answer is stored, the cited tags are checked against the ones the session handed out, and a tag that was never given is logged as invented. The tags arrive with the memory block, on the turn's first tool call (see [Known limitations](#known-limitations)), so a turn that calls no tool writes no credit line. Set `COGNEE_PLUGIN_CITE_MEMORY=false` in `~/.cognee/.env` to turn the tags and the line off.
+The recall tags every item it injects with `m1`, `m2`… and where it came from, and adds an instruction asking for the line. When the answer is stored, the cited tags are checked against the ones the session handed out, and a tag that was never given is logged as invented. The tags arrive with the memory block, on the turn's first tool call other than `Read` (see [Known limitations](#known-limitations)), so a turn that calls no such tool writes no credit line. Set `COGNEE_PLUGIN_CITE_MEMORY=false` in `~/.cognee/.env` to turn the tags and the line off.
 
 ## Status line (Cursor CLI)
 
@@ -151,7 +151,7 @@ The Cursor IDE has no status line. There, the same text (without ANSI) is the fi
 
 ## Known limitations
 
-- **Per-prompt recall needs a tool call.** Cursor documents no way for `beforeSubmitPrompt` to add context, so the recall made there reaches the model with the turn's first `postToolUse`. A turn that answers without calling any tool gets only the session-start context.
+- **Per-prompt recall needs a tool call.** Cursor documents no way for `beforeSubmitPrompt` to add context, so the recall made there reaches the model with the turn's first `postToolUse`. Cursor accepts `additional_context` on a `Read` and then drops it (IDE 3.26), so the block waits for the turn's first other tool. A turn that answers without calling any tool, or only reads files, gets only the session-start context.
 - **Windows is untested in Cursor.** The shared test suite runs on Windows CI, but `scripts/run-cursor-hook.cmd` is not used by the plugin's `hooks/hooks.json`, which calls the POSIX launcher; on Windows use `install-cursor-hooks.py`, which picks the `.cmd`. The status line launcher is POSIX-only too.
 - **No user-facing notices in the IDE.** Cursor has no channel for a non-blocking hook message. Notices the other plugins show as a `systemMessage` (memory off, update available) are appended to the model's context as `[cognee notice] …` so the agent can relay them; in the CLI the status line shows the same states.
 - **`preCompact` cannot inject context** in Cursor, so the memory anchor the Claude Code plugin injects before compaction is not available; the hook still defers the sync.

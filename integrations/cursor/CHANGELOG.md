@@ -11,6 +11,8 @@ project adheres to [Semantic Versioning](https://semver.org/).
 ## [0.1.0]
 
 ### Added
+- The per-prompt memory block skips `Read` tool calls and arrives with the turn's
+  next tool call: Cursor accepts a `Read`'s `additional_context` and then drops it.
 - Credit in the answer, on by default as in Claude Code: recalled items are
   tagged `[mN]` and an answer that used one ends with a
   `> 🧠 Cognee memory [mN]: …` line. `COGNEE_PLUGIN_CITE_MEMORY=false` turns it off.
